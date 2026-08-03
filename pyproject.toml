@@ -1,0 +1,24 @@
+[project]
+name = "drone-camp"
+version = "0.1.0"
+description = "Runnable Crazyflie flight scripts for a drone camp, using the Loco Positioning System in TDoA2 mode."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    # cflib also ships the `lpslib` package that setup_tdoa2.py uses to talk
+    # to the anchors, so there is nothing else to install.
+    "cflib>=0.1.32",
+]
+
+[project.optional-dependencies]
+# cfclient is only needed for the GUI work you do once per room: entering
+# anchor geometry and flashing firmware. Flying needs none of it, and it pulls
+# in PyQt6/vispy, so it stays out of the default install.
+#   uv sync --extra gui
+gui = ["cfclient>=2024.1"]
+
+# This is a collection of teaching scripts, not an importable package — the
+# scripts add the project root to sys.path themselves. Tell uv not to try to
+# build or install it.
+[tool.uv]
+package = false
