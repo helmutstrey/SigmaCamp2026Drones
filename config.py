@@ -17,16 +17,16 @@ geometry. +x, +y are along the floor; +z is up. All distances are METRES.
 # One channel per radio; unique address per drone. Keep this list in the same
 # order as the labels on your drones. Edit to match your master sheet.
 URIS = [
-    'radio://0/40/2M/E7E7E7E701',   # drone 1
-    'radio://0/40/2M/E7E7E7E702',   # drone 2
-    'radio://0/40/2M/E7E7E7E703',   # drone 3
-    'radio://1/80/2M/E7E7E7E704',   # drone 4
-    'radio://1/80/2M/E7E7E7E705',   # drone 5
-    'radio://1/80/2M/E7E7E7E706',   # drone 6
-    'radio://1/80/2M/E7E7E7E707',   # drone 7
-    'radio://2/120/2M/E7E7E7E708',  # drone 8
-    'radio://2/120/2M/E7E7E7E709',  # drone 9
-    'radio://2/120/2M/E7E7E7E70A',  # drone 10
+    'radio://0/40/2M/E7E7E7E7E1',   # drone 1
+    'radio://0/40/2M/E7E7E7E7E2',   # drone 2
+    'radio://0/40/2M/E7E7E7E7E3',   # drone 3
+    'radio://1/80/2M/E7E7E7E7E4',   # drone 4
+    'radio://1/80/2M/E7E7E7E7E5',   # drone 5
+    'radio://1/80/2M/E7E7E7E7E6',   # drone 6
+    'radio://1/80/2M/E7E7E7E7E7',   # drone 7
+    'radio://2/120/2M/E7E7E7E7E8',  # drone 8
+    'radio://2/120/2M/E7E7E7E7E9',  # drone 9
+    'radio://2/120/2M/E7E7E7E7E0',  # drone 10
 ]
 
 # Convenience handles used by the single-/few-drone scripts.
