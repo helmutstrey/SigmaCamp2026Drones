@@ -70,18 +70,30 @@ ANCHOR_IDS = list(range(8))        # TDoA2 = anchor IDs 0..7
 # leave this empty ({}) and setup_tdoa2.py will only set the anchor mode.
 # Fill it in (id -> (x, y, z) in metres) only if you want a scripted way to
 # restore geometry after an anchor is reset or replaced.
-ANCHOR_POSITIONS = {}
+# Measured values from anchor2.yaml (id -> (x, y, z) in metres):
+ANCHOR_POSITIONS = {
+    0: (0.0,  0.0, 0.0),
+    1: (0.0,  4.5, 1.4),
+    2: (2.5,  4.3, 0.0),
+    3: (2.5, -0.2, 1.4),
+    4: (0.0,  0.0, 1.4),
+    5: (0.0,  4.5, 0.0),
+    6: (2.5,  4.3, 1.4),
+    7: (2.5, -0.2, 0.0),
+}
 
 # ---------------------------------------------------------------------------
 # 3. FLIGHT BOX  (must sit INSIDE the convex hull of your 8 anchors)
 # ---------------------------------------------------------------------------
-# TDoA positioning is only trustworthy inside the anchor volume. Make this box
-# a bit SMALLER than the anchor box so drones never fly to the edge.
-# Defaults assume a ~4 x 4 x 2.5 m anchor volume — REPLACE with your numbers.
+# TDoA positioning is only trustworthy inside the anchor volume. This box is a
+# little smaller than the anchor footprint so drones never fly to the edge.
+# Anchor extents: x 0.0..2.5, y -0.2..4.5, z 0.0..1.4 (high anchors at ~1.4 m).
+# Margins are small (~0.2 m in x/y): the far anchors on the x=2.5 side sit at
+# y=4.3, so y_max is held to 4.1; z is capped below the 1.4 m high anchors.
 BOX = {
-    'x_min': 0.5, 'x_max': 3.5,
-    'y_min': 0.5, 'y_max': 3.5,
-    'z_min': 0.4, 'z_max': 1.8,
+    'x_min': 0.2, 'x_max': 2.3,
+    'y_min': 0.2, 'y_max': 4.1,
+    'z_min': 0.3, 'z_max': 1.25,
 }
 
 CENTER = ((BOX['x_min'] + BOX['x_max']) / 2.0,
