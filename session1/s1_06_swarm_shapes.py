@@ -1,4 +1,6 @@
 """
+Session 1 · Script 6 — Swarm shapes, the student exercise  (FLIES — 8 drones)
+
 8-drone swarm takeoff over TDoA2 / Loco Positioning System.
 
 Everything up through "hovering at home positions" is done: arm, pin
@@ -13,8 +15,13 @@ auto-generated grid inside config.BOX).
 Ctrl+C, or any exception (including ones from your own shape code),
 lands the whole swarm - it does not fall out of the sky.
 
-Usage:
-    python3 swarm_shapes.py
+Run:  python s1_06_swarm_shapes.py
+Prereq: preflight (session2/s2_00_preflight_lps.py) passes on EVERY drone;
+        each one placed near its printed home with its NOSE ALONG +x.
+        Sanity-check a single drone with s1_05_fly_forward_back.py first.
+Safety: area clear, glasses on. Eight aircraft is the largest fleet in this
+        material — the drones cannot sense each other, so the altitude lanes
+        in the printed home list are the only thing keeping them apart.
 """
 import math
 import time

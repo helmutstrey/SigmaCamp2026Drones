@@ -1,11 +1,17 @@
 """
-Single-drone example built on swarm_shapes.py's setup pattern: arm, pin
+Session 1 · Script 5 — Forward and back  (FLIES — needs LPS)
+
+Single-drone example built on s1_06_swarm_shapes.py's setup pattern: arm, pin
 TDoA2, reset + wait for position lock, takeoff, move forward, move
 back to start, land. Use this to sanity-check one drone's LOCO
 position hold before running the full swarm script.
 
-Usage:
-    python3 fly_forward_back.py
+Run:  python s1_05_fly_forward_back.py
+Prereq: preflight (session2/s2_00_preflight_lps.py) passes; drone starts
+        INSIDE the box with its NOSE ALONG +x — the estimator assumes that
+        heading, and "forward" here is +x.
+Safety: area clear, glasses on. Ctrl-C lands the drone (it does not cut the
+        motors — cf_utils.emergency_stop is the hard kill).
 """
 import time
 
@@ -81,7 +87,8 @@ def main():
         pin_tdoa2(scf)
 
         if not reset_estimator(scf):
-            print('Aborting: fix position estimate first (see check_setup.py).')
+            print('Aborting: fix position estimate first '
+                  '(see session2/s2_00_preflight_lps.py).')
             return
 
         x0, y0 = config.CENTER
