@@ -1,7 +1,7 @@
 """
 Session 1 · Script 5 — Forward and back  (FLIES — needs LPS)
 
-Single-drone example built on s1_06_swarm_shapes.py's setup pattern: arm, pin
+Single-drone example built on session5/s5_04_swarm_shapes.py's setup pattern: arm, pin
 TDoA2, reset + wait for position lock, takeoff, move forward, move
 back to start, land. Use this to sanity-check one drone's LOCO
 position hold before running the full swarm script.
@@ -13,7 +13,11 @@ Prereq: preflight (session2/s2_00_preflight_lps.py) passes; drone starts
 Safety: area clear, glasses on. Ctrl-C lands the drone (it does not cut the
         motors — cf_utils.emergency_stop is the hard kill).
 """
+import os
+import sys
 import time
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import cflib.crtp
 from cflib.crazyflie import Crazyflie

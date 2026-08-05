@@ -64,7 +64,6 @@ Crazyflie TOC cache to `./cache`, so the working directory matters.
 - `s1_03_hover_trigger.py` — *optional* gentle autonomous hover if you have no gamepads. (Flies; needs LPS.)
 - `s1_04_hover_land.py` — same hover, but it descends past the floor and cuts the motors itself instead of letting `MotionCommander` land and hand over to the high-level commander. Use this one if a drone lifts off again as the script disconnects. (Flies; needs LPS.)
 - `s1_05_fly_forward_back.py` — one drone out 0.5 m along +x and back, in absolute coordinates. The sanity check for a single drone's position hold before you scale up. (Flies; needs LPS.)
-- `s1_06_swarm_shapes.py` — ★ *student exercise.* All 8 drones take off into a grid of homes + altitude lanes; `fly_shapes()` is left empty for your choreography. Ctrl-C or any exception in your code lands the whole swarm. (Flies; 8 drones.)
 
 **Session 2 — positioning + first autonomous flight**
 - `s2_00_preflight_lps.py` — **run first.** Verifies deck, TDoA2 mode, all 8 anchors, estimator, position. Your health check.
@@ -87,6 +86,7 @@ Crazyflie TOC cache to `./cache`, so the working directory matters.
 - `s5_01_formations.py` — line → circle → line transitions.
 - `s5_02_ceremony_show.py` — ★ the full phased routine. Edit `build_phases()` to design your piece.
 - `s5_03_abort_demo.py` — the abort drill (drones drop — do it low over a soft area).
+- `s5_04_swarm_shapes.py` — ★ *student exercise.* All 8 drones take off into a grid of homes + altitude lanes; `fly_shapes()` is left empty for your choreography. Ctrl-C or any exception in your code lands the whole swarm. Largest fleet in the material — sanity-check one drone with `s1_05` first. (Flies; 8 drones.)
 
 ---
 
