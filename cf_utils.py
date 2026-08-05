@@ -124,12 +124,18 @@ def anchor_status(scf, timeout_s=5.0):
     return (list(mem.anchor_ids), list(mem.active_anchor_ids), positions)
 
 
-def check_anchors(scf, expected=None, verbose=True, status=None):
-    """True if every expected anchor ID is currently being heard.
+def check_anchors(scf, expected=None, verbose=True, status=None, require_all=False):
+    """Report which anchors the deck currently hears. Warns, does not veto.
 
-    Prints which anchors are missing, and calls out anchor 0 specially: it is
-    the TDoA2 master, and without it nothing ranges at all. Pass `status` from
-    a previous anchor_status() call to avoid a second round-trip to the deck.
+    Hearing a subset is normal on the ground: a drone parked outside the
+    anchor volume, or shadowed by a body or a table leg, picks up only some of
+    them and fills the list in once it is inside the box. So a missing anchor
+    prints a warning and this still returns True.
+
+    Pass require_all=True to get the strict behaviour back — then a missing
+    anchor returns False. Anchor 0 is called out either way: it is the TDoA2
+    master, and without it nothing ranges at all. Pass `status` from a previous
+    anchor_status() call to avoid a second round-trip to the deck.
     """
     expected = list(config.ANCHOR_IDS if expected is None else expected)
     ids, active, _positions = status if status else anchor_status(scf)
@@ -152,14 +158,16 @@ def check_anchors(scf, expected=None, verbose=True, status=None):
         return True
 
     if verbose:
-        print('  !! MISSING anchors: {}'.format(missing))
+        print('  !! anchors not heard yet: {}'.format(missing))
         if 0 in missing:
             print('     anchor 0 is the TDoA2 MASTER — nothing ranges without '
                   'it. Check its power first.')
-        print('     Check power, and that each anchor can see the others '
+        print('     Usually fine if the drone is still outside the box — it '
+              'should hear the rest once it is inside. If the list does not '
+              'fill in, check power and that each anchor can see the others '
               '(TDoA2 needs one shared schedule, not just line-of-sight to '
               'the drone).')
-    return False
+    return not require_all
 
 
 def set_anchor_modes_tdoa2(scf, anchor_ids=None, repeats=5):

@@ -173,9 +173,10 @@ def check_positioning(scf):
               'or session2/s2_00_preflight_lps.py to see which link is broken.')
         return False
 
-    if not cf_utils.check_anchors(scf):
-        print('  Anchors are not all heard — aborting before takeoff.')
-        return False
+    # A partial anchor list is a warning, not a veto — a drone on the ground
+    # outside the box often hears only some of them and picks up the rest once
+    # it is inside. check_anchors() prints what it heard.
+    cf_utils.check_anchors(scf)
     return True
 
 

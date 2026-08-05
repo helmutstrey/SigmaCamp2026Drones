@@ -50,7 +50,7 @@ def main():
         if active is None:
             print('  [4/6] SKIP — this firmware does not expose the anchor list')
         else:
-            ok = cf_utils.check_anchors(scf, status=(ids, active, positions))
+            cf_utils.check_anchors(scf, status=(ids, active, positions))
             unpositioned = sorted(i for i in (active or [])
                                   if not positions.get(i, (None, False))[1])
             if unpositioned:
@@ -58,13 +58,11 @@ def main():
                       'position — set their coordinates in cfclient (or '
                       'setup_tdoa2.py) or the estimate will be wrong.'.format(
                           unpositioned))
-            if not ok:
-                print('  [4/6] FAIL — fix the anchors before flying. In TDoA2 '
-                      'the schedule is fixed, so a missing anchor is a hole '
-                      'in it.')
-                return
-            print('  [4/6] all {} anchors heard, positions valid'.format(
-                len(config.ANCHOR_IDS)))
+            # Hearing a subset from the ground is not a failure — the estimator
+            # test below is the real verdict on whether this drone can fly.
+            print('  [4/6] {}/{} anchors heard{}'.format(
+                len(active), len(config.ANCHOR_IDS),
+                '' if unpositioned else ', positions valid'))
 
         cf_utils.use_kalman_estimator(scf)
         try:
