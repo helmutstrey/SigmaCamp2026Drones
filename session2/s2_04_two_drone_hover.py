@@ -6,6 +6,9 @@ hovers at 0.4 m; only then does drone B do the same. Both hold for 3 s, then
 they land one at a time, last up first down. Sequential on purpose: one drone
 in motion at a time is one thing to watch.
 
+The landing is two-stage and slow — see the LAND_* constants — because the
+floor lies below the anchors' volume, where the z estimate is at its worst.
+
 Pick the two aircraft with DRONE_A_NUMBER / DRONE_B_NUMBER below — they are
 indices into config.URIS, so 0 is drone 1.
 
@@ -42,6 +45,18 @@ SPACING = 0.3             # m between the two hover slots
 HOLD_S = 3.0              # how long both hover together
 MOVE_TIME = 2.0           # s to slide from the takeoff spot to the slot
 
+# Landing. The floor sits UNDER the volume the anchors enclose, and z is the
+# least trustworthy axis down there, so "descend to z = 0 and cut" can end the
+# trajectory while the drone is still in the air — that is the drop you feel.
+# Instead: come down to a low hover, settle, then creep well past the floor so
+# the drone is already resting on it before the motors stop. Pushing into the
+# ground for a second is gentler than a 15 cm fall.
+LAND_APPROACH_Z = 0.15    # m — low hover to pause at on the way down
+LAND_FLOOR_Z = -0.25      # m — final target, deliberately below the floor
+LAND_APPROACH_RATE = 0.15 # m/s down to the low hover
+LAND_TOUCH_RATE = 0.06    # m/s for the last stretch — this is the gentle one
+LAND_SETTLE_S = 0.7       # s to steady at the low hover before touching down
+
 
 def hover_at(scf, target, label):
     """Take off and slide to an absolute slot. Blocks until it is parked."""
@@ -57,12 +72,25 @@ def hover_at(scf, target, label):
     time.sleep(MOVE_TIME)
 
 
-def land_drone(scf, label):
+def _descend(hlc, from_z, to_z, rate):
+    """One vertical leg at `rate` m/s. Never quicker than a second."""
+    duration = max(abs(from_z - to_z) / rate, 1.0)
+    hlc.land(to_z, duration, yaw=None)     # land() = descend from current x-y
+    time.sleep(duration)
+    return duration
+
+
+def land_drone(scf, label, from_z=HOVER_HEIGHT):
+    """Two-stage descent: down to a low hover, settle, then creep onto the floor."""
     hlc = scf.cf.high_level_commander
-    print('  {}: landing ...'.format(label))
-    hlc.land(0.0, config.TAKEOFF_TIME, yaw=None)
-    time.sleep(config.TAKEOFF_TIME)
-    hlc.stop()
+
+    print('  {}: descending to {:.2f} m ...'.format(label, LAND_APPROACH_Z))
+    _descend(hlc, from_z, LAND_APPROACH_Z, LAND_APPROACH_RATE)
+    time.sleep(LAND_SETTLE_S)
+
+    secs = _descend(hlc, LAND_APPROACH_Z, LAND_FLOOR_Z, LAND_TOUCH_RATE)
+    print('  {}: touching down over {:.1f} s ...'.format(label, secs))
+    hlc.stop()                             # motors off, drone already resting
 
 
 def main():
