@@ -8,6 +8,17 @@ students trigger a calm autonomous hover: the drone rises to 0.4 m, holds for
 Run:  python s1_03_hover_trigger.py
 Prereq: LPS anchors on (TDoA2), LPS deck on the drone, drone INSIDE the box.
 Safety: clear the area, glasses on, hand on the kill switch (Ctrl-C).
+
+WARNING — this one drifts on LPS. MotionCommander is built on
+send_hover_setpoint(), which commands x/y VELOCITY, not position. That is
+right for the Flow deck, which measures velocity directly; on LPS nothing
+closes the loop on x/y, so "hover" means "hold zero velocity" and any bias in
+the estimate integrates into a drift that keeps going until it meets a wall.
+Its exit is the second hazard: MotionCommander.land() descends only to z = 0
+and then hands the drone to the high-level commander via
+send_notify_setpoint_stop(), which can make it lift off again as the link
+closes. Fly s1_04_hover_land.py instead — same hover, position-held, motors
+cut on purpose. Keep this script for reading, not for flying.
 """
 
 import sys, os, time
