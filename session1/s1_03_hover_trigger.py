@@ -17,12 +17,12 @@ from cflib.positioning.motion_commander import MotionCommander
 
 import cf_utils
 import config
-
+drone_number = 9
 
 def main():
     cf_utils.init()
-    print('Connecting to', config.DRONE)
-    with cf_utils.make_scf(config.DRONE) as scf:
+    print('Connecting to', config.URIS[drone_number])
+    with cf_utils.make_scf(config.URIS[drone_number]) as scf:
         if not cf_utils.lps_deck_present(scf):
             print('No LPS deck detected — aborting for safety.')
             return
