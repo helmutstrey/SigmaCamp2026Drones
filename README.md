@@ -62,6 +62,7 @@ Crazyflie TOC cache to `./cache`, so the working directory matters.
 - `s1_01_connect_test.py` — link + battery check. Proves the radio chain works.
 - `s1_02_log_attitude.py` — tilt the drone by hand, watch roll/pitch/yaw. The IMU, live.
 - `s1_03_hover_trigger.py` — *optional* gentle autonomous hover if you have no gamepads. (Flies; needs LPS.)
+- `s1_04_hover_land.py` — same hover, but it descends past the floor and cuts the motors itself instead of letting `MotionCommander` land and hand over to the high-level commander. Use this one if a drone lifts off again as the script disconnects. (Flies; needs LPS.)
 
 **Session 2 — positioning + first autonomous flight**
 - `s2_00_preflight_lps.py` — **run first.** Verifies deck, TDoA2 mode, all 8 anchors, estimator, position. Your health check.
@@ -102,7 +103,7 @@ drone_camp/
 
 ## How these were validated
 
-- `python -m py_compile` on all 18 scripts + 4 modules — pass.
+- `python -m py_compile` on all 17 scripts + 4 modules — pass.
 - Import of every module and script against cflib 0.1.32 — pass.
 - API-surface assertions (every `high_level_commander`, `Swarm`, `MotionCommander`,
   `param`, `commander`, `LogConfig` call the scripts use) — pass, including the
