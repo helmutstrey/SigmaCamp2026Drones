@@ -3,9 +3,9 @@ Session 1 · Script 4 — Hover, then a positive landing  (FLIES — needs LPS)
 
 Same idea as s1_03_hover_trigger.py, but it holds a POSITION and it lands on
 its own terms: the drone notes where it is standing, rises to 0.4 m over that
-spot, holds for 3 s, then descends 0.8 m — twice the hover height, so the
-commanded height ends BELOW the floor and the drone is firmly down — and only
-then are the motors cut.
+spot, holds for 3 s, then comes down in two stages — a low hover to settle at,
+then a slow creep to well BELOW the floor, so the drone is firmly resting
+before the motors are cut. See the LAND_* constants.
 
 It is also the noisy one: it prints the LPS mode, the anchors it hears, and
 the position the drone thinks it is at, before and throughout the flight. If
@@ -52,11 +52,21 @@ HEADING_DEG = 0.0         # which way the drone's NOSE points, 0 = the LPS +x
 
 HOVER_HEIGHT = 0.4        # m above the LPS floor (z = 0 of the anchor frame)
 HOLD_S = 3.0              # how long to hover
-DESCENT_M = 0.8           # descend this far, ending at -0.4 m: below the floor
 CLIMB_RATE = 0.3          # m/s going up
-DESCENT_RATE = 0.4        # m/s coming down
 SETPOINT_PERIOD = 0.1     # s between setpoints; the firmware wants < 0.5 s
 PRINT_PERIOD = 0.5        # s between position printouts while flying
+
+# Landing, in two stages. The floor lies UNDER the volume the anchors enclose,
+# and z is the least trustworthy axis down there, so a single fast run at the
+# estimated floor lands hard: if the estimate sits above the real floor, the
+# descent ends with the drone still in the air. Come down to a low hover,
+# settle, then creep well past the floor so the drone is already resting on it
+# when the motors cut. A second of pushing into the ground beats a 15 cm fall.
+LAND_APPROACH_Z = 0.15    # m — low hover to pause at on the way down
+LAND_FLOOR_Z = -0.4       # m — final target, deliberately below the floor
+LAND_APPROACH_RATE = 0.15 # m/s down to the low hover
+LAND_TOUCH_RATE = 0.06    # m/s for the last stretch — this is the gentle one
+LAND_SETTLE_S = 0.7       # s to steady at the low hover before touching down
 
 
 class PositionLog:
@@ -226,15 +236,22 @@ def main():
                 hold_x, hold_y, hold_yaw))
 
             cf = scf.cf
-            floor_z = HOVER_HEIGHT - DESCENT_M   # -0.4 m: below the floor on purpose
             print('  taking off to {:.2f} m ...'.format(HOVER_HEIGHT))
             ramp_height(cf, hold_x, hold_y, hold_yaw, 0.0, HOVER_HEIGHT, CLIMB_RATE, pos)
+
             print('  hovering...')
             hold_position(cf, hold_x, hold_y, HOVER_HEIGHT, hold_yaw, HOLD_S, pos)
-            print('  descending {:.2f} m (commanded height {:+.2f} m) ...'.format(
-                DESCENT_M, floor_z))
-            ramp_height(cf, hold_x, hold_y, hold_yaw, HOVER_HEIGHT, floor_z,
-                        DESCENT_RATE, pos)
+
+            print('  descending to {:.2f} m ...'.format(LAND_APPROACH_Z))
+            ramp_height(cf, hold_x, hold_y, hold_yaw, HOVER_HEIGHT,
+                        LAND_APPROACH_Z, LAND_APPROACH_RATE, pos)
+            hold_position(cf, hold_x, hold_y, LAND_APPROACH_Z, hold_yaw,
+                          LAND_SETTLE_S, pos)
+
+            print('  touching down slowly (commanded height {:+.2f} m) ...'.format(
+                LAND_FLOOR_Z))
+            ramp_height(cf, hold_x, hold_y, hold_yaw, LAND_APPROACH_Z,
+                        LAND_FLOOR_Z, LAND_TOUCH_RATE, pos)
         finally:
             # Throttle to zero — always, including on Ctrl-C. emergency_stop()
             # also stops the high-level commander, so nothing is left holding a
