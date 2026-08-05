@@ -42,6 +42,14 @@ import config
 
 DRONE_NUMBER = 9          # index into config.URIS (0 = drone 1, so 9 = drone 10)
 
+HEADING_DEG = 0.0         # which way the drone's NOSE points, 0 = the LPS +x
+                          # axis. The estimator has no compass indoors: it
+                          # believes this number. Get it wrong and every
+                          # correction is rotated by the error — 180 deg off
+                          # and the drone accelerates away from its target.
+                          # Easiest is to leave this 0 and physically point
+                          # every drone along +x before takeoff.
+
 HOVER_HEIGHT = 0.4        # m above the LPS floor (z = 0 of the anchor frame)
 HOLD_S = 3.0              # how long to hover
 DESCENT_M = 0.8           # descend this far, ending at -0.4 m: below the floor
@@ -180,7 +188,8 @@ def main():
         if not check_positioning(scf):
             return
 
-        cf_utils.prepare_for_flight(scf)         # kalman + high-level + converged position
+        # kalman + high-level + initial heading + converged position
+        cf_utils.prepare_for_flight(scf, initial_yaw_deg=HEADING_DEG)
 
         pos = PositionLog(scf)
         pos.start()
@@ -199,6 +208,11 @@ def main():
                       'are absolute in the LPS frame, so this drone would fly '
                       '{:+.2f} m off from what you asked for.'.format(z, -z))
 
+            print('  CHECK THE NOSE: this drone must be facing {:.0f} deg '
+                  '({}), or it will fly the wrong way.'.format(
+                      HEADING_DEG,
+                      'the +x axis' if HEADING_DEG == 0.0 else
+                      '{:.0f} deg counter-clockwise from +x'.format(HEADING_DEG)))
             input('Position estimate is good. Press ENTER to hover, Ctrl-C to abort... ')
 
             # Take the spot to hold from the drone itself, clamped into the box.

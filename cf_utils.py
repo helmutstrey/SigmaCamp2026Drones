@@ -9,6 +9,7 @@ flight box. Read this file once — the rest of the scripts stay short because
 the care lives here.
 """
 
+import math
 import threading
 import time
 
@@ -198,17 +199,47 @@ def activate_high_level_commander(scf):
     scf.cf.param.set_value('commander.enHighLevel', '1')
 
 
-def prepare_for_flight(scf):
+def set_initial_yaw(scf, yaw_deg):
+    """Tell the estimator which way the drone is FACING, in degrees, 0 = +x.
+
+    Indoors the Kalman filter has no absolute heading reference. On a reset it
+    simply assumes the drone points along 'kalman.initialYaw' (0 by default,
+    i.e. the LPS +x axis) and leaks the yaw estimate back to that angle while
+    the drone sits on the ground. Get it wrong and every position correction
+    comes out rotated by the error: 90 degrees off makes the drone orbit its
+    target, 180 degrees off makes it push exactly the wrong way and accelerate
+    away. This is the usual explanation for 'the position looks right but it
+    flew into a wall'.
+
+    Must be set BEFORE reset_estimator(). Returns True if the parameter
+    existed and was set; older firmware without it needs the drone physically
+    pointed along +x instead.
+    """
+    try:
+        scf.cf.param.set_value('kalman.initialYaw', str(math.radians(yaw_deg)))
+        return True
+    except Exception as e:
+        print('  (could not set kalman.initialYaw: {} — point the drone along '
+              'the +x axis before takeoff instead)'.format(e))
+        return False
+
+
+def prepare_for_flight(scf, initial_yaw_deg=None):
     """Everything a drone needs before it lifts off: LPS deck in TDoA2, Kalman
     estimator on, high-level commander on, and a fresh, converged position
     estimate.
 
     Order matters — the mode change restarts ranging, so it has to happen
-    before we ask the estimator to converge.
+    before we ask the estimator to converge, and the initial yaw has to be set
+    before the reset that consumes it.
+
+    Pass initial_yaw_deg if the drone does NOT start facing the +x axis.
     """
     use_tdoa2_mode(scf)
     use_kalman_estimator(scf)
     activate_high_level_commander(scf)
+    if initial_yaw_deg is not None:
+        set_initial_yaw(scf, initial_yaw_deg)
     reset_estimator(scf)
 
 
