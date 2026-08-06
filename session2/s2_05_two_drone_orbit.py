@@ -27,6 +27,16 @@ How the orbit is flown, and why not with go_to():
   yaw 0 (nose along +x) for the whole flight — they translate around the
   circle, they do not pirouette.
 
+  Streaming costs radio bandwidth, and both drones share one dongle. cflib
+  gives each link an outgoing queue exactly ONE packet deep, and each link's
+  thread competes for that dongle; if a link cannot drain in time,
+  send_packet() blocks two seconds and then kills the link with a queue-full
+  error. Two drones at 10 Hz is 20 packets/s, half of what broke s2_06 before
+  it was rewritten, so RATE_LIMIT_HZ throttles each link's thread to keep them
+  from hammering the radio. If you still see trouble, raise SETPOINT_PERIOD to
+  0.15 s — still well inside the firmware's 500 ms setpoint watchdog. Four
+  drones would need the high-level commander instead, as s2_06 does.
+
   SPACING is 0.3 m at the same altitude, tighter than this camp's usual
   altitude-lane separation, and now the drones are moving relative to each
   other. Fly it once at low height with plenty of room before trusting it.
@@ -49,6 +59,11 @@ MOVE_TIME = 3.0           # s to slide from the takeoff spot onto the circle
 CLIMB_RATE = 0.3          # m/s going up
 SETPOINT_PERIOD = 0.1     # s between setpoints; the firmware wants < 0.5 s
 YAW_DEG = 0.0             # nose along +x. DEGREES here — see the docstring.
+RATE_LIMIT_HZ = 100       # throttle each link's radio thread (cflib's
+                          # '?rate_limit=N' URI query). Both drones share one
+                          # dongle and this script streams to both, so keeping
+                          # the link threads from hammering the radio matters —
+                          # see the note below. None disables it.
 
 # Landing, same two-stage profile as s2_04: the floor sits under the anchors'
 # volume where z is least trustworthy, so creep past it rather than aiming at
@@ -58,6 +73,14 @@ LAND_FLOOR_Z = -0.25      # m — final target, deliberately below the floor
 LAND_APPROACH_RATE = 0.15 # m/s down to the low hover
 LAND_TOUCH_RATE = 0.06    # m/s for the last stretch — this is the gentle one
 LAND_SETTLE_S = 0.7       # s to steady at the low hover before touching down
+
+
+def with_rate_limit(uri):
+    """Append cflib's '?rate_limit=N' query, if RATE_LIMIT_HZ is set."""
+    if not RATE_LIMIT_HZ:
+        return uri
+    joiner = '&' if '?' in uri else '?'
+    return '{}{}rate_limit={}'.format(uri, joiner, RATE_LIMIT_HZ)
 
 
 def _send(cf, point):
@@ -164,7 +187,8 @@ def main():
         return
 
     cf_utils.init()
-    with cf_utils.make_scf(uri_a) as scf_a, cf_utils.make_scf(uri_b) as scf_b:
+    with cf_utils.make_scf(with_rate_limit(uri_a)) as scf_a, \
+            cf_utils.make_scf(with_rate_limit(uri_b)) as scf_b:
         resting = {}
         for scf, label in ((scf_a, 'A'), (scf_b, 'B')):
             if not cf_utils.lps_deck_present(scf):
