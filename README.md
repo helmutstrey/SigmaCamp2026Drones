@@ -72,7 +72,7 @@ Crazyflie TOC cache to `./cache`, so the working directory matters.
 - `s2_03_print_position.py` — carry the drone around, watch TDoA2 track it; walk it outside the box to see the estimate degrade. Also lists the anchors currently heard.
 - `s2_04_two_drone_hover.py` — two drones, one at a time: A takes off to its slot and hovers at 0.4 m, then B, then both land. Pick the pair by index at the top of the file. Slots are 0.3 m apart at the *same* height, which is tighter than the altitude-lane separation the swarm scripts use — read the warning in the docstring first.
 - `s2_05_two_drone_orbit.py` — the same pair, now moving: they slide onto opposite ends of a 0.3 m line and walk it once around its middle, then land gently. Streams position setpoints to both drones rather than using `go_to`, so the circle is smooth and the separation is exact by construction. Fly `s2_04` first.
-- `s2_06_square.py` — four drones on **one** radio: each takes off in turn to its corner of a 0.8 m square centred in the box at mid-height, all hold 2 s, then land one at a time. 40 packets/s through a single dongle — stutter here is radio bandwidth, not LPS.
+- `s2_06_square.py` — four drones across **two** radios: each takes off in turn to its corner of a 0.8 m square centred in the box at mid-height, all hold 2 s, then land one at a time. The dongle index is rewritten onto the URIs from `config.URIS` (first half on radio 0, second half on radio 1); set `RADIOS = 1` for the single-dongle version. Uses the high-level commander rather than streamed setpoints, so a parked drone costs no radio traffic at all.
 
 **Session 3 — trajectories (single drone, absolute coordinates)**
 - `s3_01_solo_square.py` — a square from an explicit waypoint list.

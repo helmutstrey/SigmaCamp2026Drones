@@ -36,6 +36,46 @@ def make_scf(uri):
     return SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache'))
 
 
+def on_radio(uri, devid):
+    """Rewrite a URI to go through Crazyradio dongle number `devid`.
+
+    ONLY the dongle index changes. Channel, datarate and address stay as they
+    are: those are the drone's own firmware settings, and a URI that disagrees
+    with them simply will not find the drone.
+    """
+    scheme, _, rest = uri.partition('://')
+    parts = rest.split('/')
+    parts[0] = str(devid)
+    return '{}://{}'.format(scheme, '/'.join(parts))
+
+
+def split_across_radios(uris, radios=2):
+    """Deal a list of URIs into contiguous groups, one dongle each.
+
+    With four drones and two dongles the first two go to radio 0 and the last
+    two to radio 1. Splitting the fleet gives each dongle its own USB pipe and
+    its own set of link threads, which is what relieves the one-packet-deep
+    outgoing queue cflib gives every link.
+
+    Note what this does NOT fix: dongles on the same channel still share the
+    air. Separate channels need each drone reconfigured to match, so that is a
+    cfclient job, not something a URI can do.
+    """
+    if radios < 1:
+        raise ValueError('radios must be at least 1')
+    return [on_radio(uri, (i * radios) // len(uris))
+            for i, uri in enumerate(uris)]
+
+
+def count_radios():
+    """How many Crazyradio dongles are plugged in (None if it cannot tell)."""
+    try:
+        from cflib.drivers import crazyradio
+        return len(crazyradio.get_serials())
+    except Exception:
+        return None
+
+
 # --------------------------------------------------------------------------
 # Loco Positioning mode (TDoA2)
 # --------------------------------------------------------------------------

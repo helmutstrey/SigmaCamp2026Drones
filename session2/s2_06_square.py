@@ -1,5 +1,5 @@
 """
-Session 2 · Script 6 — Four drones, one square  (FLIES — 4 drones, one radio)
+Session 2 · Script 6 — Four drones, one square  (FLIES — 4 drones, 2 radios)
 
 The first flight with the whole starter fleet. Each drone takes off in turn and
 flies to its own corner of a square centred in the box, halfway up the z range;
@@ -7,18 +7,33 @@ once all four are parked they hold for 2 s, then land one at a time with the
 slow two-stage descent from s2_04.
 
 Run:  python s2_06_square.py
-Prereq: s2_04 flies cleanly. All four drones INSIDE the box, each standing
+Prereq: s2_04 flies cleanly. TWO Crazyradio dongles plugged in (set RADIOS = 1
+        if you only have one). All four drones INSIDE the box, each standing
         near the corner printed at launch, NOSE ALONG +x.
 Safety: area clear, glasses on, Ctrl-C cuts all four.
 
+Two dongles, and where the URIs come from:
+
+  The drones' URIs are taken from config.URIS and only their DONGLE INDEX is
+  rewritten — the first half of DRONE_NUMBERS flies on radio 0, the second
+  half on radio 1. Channel, datarate and address are left exactly as config
+  has them, because those are settings inside each drone's own firmware: a URI
+  that disagrees with them will not find the drone at all.
+
+  That also means both dongles here sit on channel 80. You gain a second USB
+  pipe and a second set of link threads, which is the part that matters, but
+  the two dongles still share the air. Truly separate channels would mean
+  reconfiguring each drone in cfclient to match — a bench job, not something a
+  URI can do.
+
 Why the high-level commander here, when s2_05 streams setpoints:
 
-  Four drones share ONE Crazyradio in this exercise. cflib gives each link an
-  outgoing queue exactly ONE packet deep, and every link runs its own thread
-  competing for the single dongle. Streaming setpoints at 10 Hz to four drones
-  means 40 packets/s pushed into four depth-1 queues; when a link cannot drain
-  in time, send_packet() blocks for two seconds and then kills the link with
-  "could not send packet to copter" — a queue-full error, mid-flight.
+  cflib gives each link an outgoing queue exactly ONE packet deep, and every
+  link runs its own thread competing for its dongle. Streaming setpoints at
+  10 Hz to four drones means 40 packets/s pushed into four depth-1 queues;
+  when a link cannot drain in time, send_packet() blocks for two seconds and
+  then kills the link with "could not send packet to copter" — a queue-full
+  error, mid-flight. That is exactly what this script used to do.
 
   So: no streaming. takeoff()/go_to()/land() are one-shot commands, and the
   Crazyflie runs the trajectory onboard. A drone parked at its corner needs
@@ -26,9 +41,10 @@ Why the high-level commander here, when s2_05 streams setpoints:
   instead of thousands. This is why the swarm sessions use the high-level
   commander too. Streaming is for continuous motion with few drones (s2_05).
 
-  If you still see radio trouble, set RATE_LIMIT_HZ below — cflib accepts a
-  '?rate_limit=N' URI query that throttles each link's thread and eases the
-  contention between them.
+  Splitting across two dongles and using one-shot commands are independent
+  wins, and both are in play here — which is why this has plenty of headroom.
+  If you still see radio trouble, set RATE_LIMIT_HZ below: cflib accepts a
+  '?rate_limit=N' URI query that throttles each link's thread.
 
 Note: only one drone ever moves at a time. But all four sit at the SAME
       altitude, so the square's side length is the only thing keeping them
@@ -43,7 +59,14 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import cf_utils
 import config
 
-DRONE_NUMBERS = [0, 1, 2, 3]   # indices into config.URIS (0 = drone 1)
+DRONE_NUMBERS = [0, 1, 2, 3]   # indices into config.URIS (0 = drone 1). Any
+                               # four will do — the list order decides both the
+                               # corner each drone flies to and its dongle.
+RADIOS = 2                     # Crazyradio dongles to spread the fleet over.
+                               # The list is dealt out in contiguous halves:
+                               # the first two drones on radio 0, the last two
+                               # on radio 1. Set to 1 for the single-dongle
+                               # version of this exercise.
 
 SIDE = 0.8                # m — length of the square's side
 HOLD_S = 2.0              # s — how long all four hover together
@@ -114,17 +137,25 @@ def corners_fit(corners):
     return ok
 
 
-def same_radio(uris):
-    """True if every URI goes through one dongle — 'radio://N/...' with equal N."""
-    radios = {uri.split('/')[2] for uri in uris}
-    if len(radios) == 1:
-        print('  all {} drones on radio {} — one dongle, as intended.'.format(
-            len(uris), sorted(radios)[0]))
+def radios_ready(uris, labels):
+    """Print the dongle assignment, and check that many dongles are plugged in."""
+    groups = {}
+    for uri, label in zip(uris, labels):
+        groups.setdefault(uri.split('/')[2], []).append(label)
+    for devid in sorted(groups):
+        print('  radio {}: {}'.format(devid, ', '.join(groups[devid])))
+
+    wanted = len(groups)
+    found = cf_utils.count_radios()
+    if found is None:
+        print('  (could not count dongles — make sure {} are plugged in)'.format(wanted))
         return True
-    print('  !! these URIs span radios {} — this script is the ONE-radio '
-          'exercise. Use config.URIS (all radio 0), not config.URIS_DIST.'
-          .format(sorted(radios)))
-    return False
+    if found < wanted:
+        print('  !! this needs {} Crazyradio dongles but only {} {} plugged in.'
+              .format(wanted, found, 'is' if found == 1 else 'are'))
+        return False
+    print('  {} dongles plugged in, {} needed.'.format(found, wanted))
+    return True
 
 
 def main():
@@ -132,7 +163,10 @@ def main():
         print('DRONE_NUMBERS repeats a drone — aborting.')
         return
 
-    uris = [config.URIS[n] for n in DRONE_NUMBERS]
+    # Take the drones' own URIs from config and only swap the dongle index:
+    # the first half of the list flies on radio 0, the second half on radio 1.
+    uris = cf_utils.split_across_radios(
+        [config.URIS[n] for n in DRONE_NUMBERS], RADIOS)
     labels = ['D{}'.format(n + 1) for n in DRONE_NUMBERS]
 
     square_z = (config.BOX['z_min'] + config.BOX['z_max']) / 2.0
@@ -142,7 +176,7 @@ def main():
         SIDE, square_z))
     for label, uri, corner in zip(labels, uris, corners):
         print('  {}  {}  ->  x={:+.2f}  y={:+.2f}'.format(label, uri, *corner[:2]))
-    if not (corners_fit(corners) and same_radio(uris)):
+    if not (corners_fit(corners) and radios_ready(uris, labels)):
         print('  Fix the above before flying — aborting before takeoff.')
         return
 
