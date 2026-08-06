@@ -9,8 +9,50 @@ slow two-stage descent from s2_04.
 Run:  python s2_06_square.py
 Prereq: s2_04 flies cleanly. TWO Crazyradio dongles plugged in (set RADIOS = 1
         if you only have one). All four drones INSIDE the box, each standing
-        near the corner printed at launch, NOSE ALONG +x.
+        UNDER ITS OWN CORNER (see below), NOSE ALONG +x.
 Safety: area clear, glasses on, Ctrl-C cuts all four.
+
+WHERE TO STAND THE DRONES — this is what stops them hitting each other:
+
+  Stand each drone on the floor directly under the corner it is going to fly
+  to. Then its whole journey is a vertical climb plus a few centimetres of
+  correction, and no drone ever travels across the square.
+
+  With the defaults below (config.CENTER = 1.25, 2.15 and SIDE = 0.8) that is:
+
+      D1  x=0.85  y=1.75      (-x, -y corner, nearest the origin)
+      D2  x=1.65  y=1.75      (+x, -y)
+      D3  x=1.65  y=2.55      (+x, +y)
+      D4  x=0.85  y=2.55      (-x, +y)
+
+                 y
+                 ^
+        D4 ......|...... D3          all four at z = 0.775 m once flying
+        .        |        .          square side 0.8 m
+        .    CENTER(1.25, .          corners listed counter-clockwise
+        .        2.15)    .          starting from the -x/-y one
+        D1 ......|...... D2  --> x
+
+  Tape those four spots on the floor once and the problem goes away for good.
+  The script prints the same coordinates at launch, so if you change SIDE or
+  your BOX, re-read them from the printout rather than this comment.
+
+  Why placement matters at all: the drones take off ONE AT A TIME, and each
+  one parks at its corner before the next leaves the ground. Every drone
+  therefore flies at the same altitude as everything already parked. A drone
+  standing far from its corner — in a cluster in the middle, or lined up along
+  a wall — has to cross the square at that altitude to reach it, straight
+  through the airspace its neighbours are holding. Standing it under its own
+  corner removes the crossing entirely.
+
+  The corner a drone gets is decided by its POSITION IN DRONE_NUMBERS, not by
+  its label: first entry takes the -x/-y corner, then counter-clockwise. Re-
+  order that list and the floor markings must follow.
+
+  If you would rather not depend on placement at all, give each drone its own
+  altitude — that is what config.HOMES does for the swarm sessions, and it is
+  the only collision avoidance that survives a drone being put down in the
+  wrong spot.
 
 Two dongles, and where the URIs come from:
 
@@ -118,7 +160,12 @@ def land_drone(scf, label, from_z):
 
 
 def square_corners(side, z):
-    """The four corners, counter-clockwise from the -x/-y one."""
+    """The four corners, counter-clockwise from the -x/-y one.
+
+    Corner i goes to DRONE_NUMBERS[i], so stand that drone on this spot before
+    launch — see "WHERE TO STAND THE DRONES" at the top. These are also the
+    coordinates printed at startup.
+    """
     cx, cy = config.CENTER
     h = side / 2.0
     return [(cx - h, cy - h, z), (cx + h, cy - h, z),
