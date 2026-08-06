@@ -72,6 +72,7 @@ Crazyflie TOC cache to `./cache`, so the working directory matters.
 - `s2_03_print_position.py` — carry the drone around, watch TDoA2 track it; walk it outside the box to see the estimate degrade. Also lists the anchors currently heard.
 - `s2_04_two_drone_hover.py` — two drones, one at a time: A takes off to its slot and hovers at 0.4 m, then B, then both land. Pick the pair by index at the top of the file. Slots are 0.3 m apart at the *same* height, which is tighter than the altitude-lane separation the swarm scripts use — read the warning in the docstring first.
 - `s2_05_two_drone_orbit.py` — the same pair, now moving: they slide onto opposite ends of a 0.3 m line and walk it once around its middle, then land gently. Streams position setpoints to both drones rather than using `go_to`, so the circle is smooth and the separation is exact by construction. Fly `s2_04` first.
+- `s2_06_square.py` — four drones on **one** radio: each takes off in turn to its corner of a 0.8 m square centred in the box at mid-height, all hold 2 s, then land one at a time. 40 packets/s through a single dongle — stutter here is radio bandwidth, not LPS.
 
 **Session 3 — trajectories (single drone, absolute coordinates)**
 - `s3_01_solo_square.py` — a square from an explicit waypoint list.
@@ -107,7 +108,7 @@ drone_camp/
 
 ## How these were validated
 
-- `python -m py_compile` on all 21 scripts + 4 modules — pass.
+- `python -m py_compile` on all 22 scripts + 4 modules — pass.
 - Import of every module and script against cflib 0.1.32 — pass.
 - API-surface assertions (every `high_level_commander`, `Swarm`, `MotionCommander`,
   `param`, `commander`, `LogConfig` call the scripts use) — pass, including the
